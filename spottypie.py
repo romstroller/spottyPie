@@ -218,8 +218,6 @@ def getLatestEpsFromPodTList( from_pl_id = "2PFeIO0B0DtenFmGKbzYvg", n=3 ):
     addTracksByID( epIDs, new_pCasts_PL['id'] )
     print( f"completed collect latest {n} eps from {from_pl_id}" )
 
-
-
 def output_help():
     print( "\nCommands are:")
     indnt = '    '
@@ -231,7 +229,7 @@ def output_help():
 
 cmdLib = {
     
-    "maxList" : { 
+    "maxlist" : { 
         
         "func" : lambda from_pl_id, new_pl_pref: maximizeList( from_pl_id, new_pl_pref ),
         "desc" : [ 
@@ -239,7 +237,7 @@ cmdLib = {
             "Params: ( from_pl_id, new_pl_pref )" ]
         },
         
-    "maxRRAD" : { 
+    "maxrrad" : { 
         
         "func" : lambda: maximizeList( "37i9dQZEVXbuX4MySjIacD", "rrad" ),
         "desc" : [
@@ -248,7 +246,7 @@ cmdLib = {
         
      },
         
-    "maxDSCO" : { 
+    "maxdsco" : { 
         
         "func" : lambda: maximizeList( "37i9dQZEVXcXssf47BUM1F", "dsco" ),
         "desc" : [
@@ -257,7 +255,6 @@ cmdLib = {
         
      },
      
-    #  distance_shuffle_playlist(pl_id)
     "shuffle" : { 
         
         "func" : lambda pl_id: distance_shuffle_playlist(pl_id),
@@ -267,7 +264,7 @@ cmdLib = {
             "Params: (playlist_id)" ]
      },
      
-    "getLib" : { 
+    "libdata" : { 
         
         "func" : lambda asPandas, store: get_library( asPandas, store ),
         "desc" : ( [
@@ -277,7 +274,7 @@ cmdLib = {
         
      },
      
-     "getPcasts" : {
+     "getpcst" : {
         
         "func" : lambda: getLatestEpsFromPodTList(),
         "desc" : [
@@ -290,8 +287,6 @@ cmdLib = {
         "func" : lambda: output_help(),
         "desc" : [ "View command guide" ]
         },
-    
-    
 }
 
 def start():
@@ -300,27 +295,35 @@ def start():
     spot = auth_SpotPy( user_id, sp_cid, sp_sec )
     return user_id, sp_cid, sp_sec, ops, spot
 
-args = sys.argv[1:]  # omits inital filename arg
+
+def getValidatedInput( args = None ): 
+    prompt = "\n\nNew command, 'b' to exit. Arg separator is space\n"
+    if not args: args = [ input( prompt ) ]
+    # split if separator in single arg, lower first
+    if len(args) == 1 and ' ' in args[0]:
+        args = args[0].split( " " )
+        args = [ args[0].lower() ] + [ arg for arg in args[1:] ]
+    # else lower single arg
+    elif len(args) == 1:  args[0] = args[0].lower() 
+    # if multiple, lower first
+    elif len(args) > 1:
+        args = ( [ args[0].lower() ] + [ arg for arg in args[ 1: ] ] )
+    else: pass # allow empty to fall through to main loop condition
+    
+    return args
 
 def mainLoop( args ):
-    while True:
-        
-        if args[0] in cmdLib.keys(): cmdLib[args[0]]["func"]( *args[1:] )
-        elif args[0] == 'b': break
-        else: 
-            print( f"\n[ {args[0]} ] is not known command." )
-            output_help()
-            
-        args = input( 
-            "\n\nNew command, or 'b' to exit. Separate args by space\n\n" ).split( " " )
+    while len(args) > 0:
+        if args[0] in cmdLib.keys(): cmdLib[ args[0].lower() ][ "func" ]( *args[1:] )
+        elif "".join(args).lower() == "b": break
+        else: print( f"\n[ {args[0]} ] is not known command." )
+        args = getValidatedInput()
 
-if (not args): 
-    print( "\n\nTell SpottyPie what you want!" )
-    output_help()
-elif ( args[0] not in cmdLib.keys() ):
-    print( f"\n[ {args[0]} ] is not known command." )
-    output_help()
-else:
-    user_id, sp_cid, sp_sec, ops, spot = start()
+def startFromArgs( args ):
+    args = getValidatedInput( args )
     mainLoop( args )
 
+if __name__ == "__main__":
+    user_id, sp_cid, sp_sec, ops, spot = start()
+    output_help()
+    startFromArgs( sys.argv[1:] ) # omits inital filename arg
