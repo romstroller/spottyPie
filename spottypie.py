@@ -240,18 +240,18 @@ cmdLib = {
         
     "maxrrad" : { 
         
-        "func" : lambda: maximizeList( "37i9dQZEVXbuX4MySjIacD", "rrad" ),
+        "func" : lambda: maximizeList( "37i9dQZEVXbuX4MySjIacD", "RRAD" ),
         "desc" : [
-            "Use maxList on Release Radar. Playlist will be prefixed 'rrad'.",
+            "Use maxList on Release Radar. Playlist will be prefixed 'RRAD'.",
             "Params: none" ]
         
      },
         
     "maxdsco" : { 
         
-        "func" : lambda: maximizeList( "37i9dQZEVXcXssf47BUM1F", "dsco" ),
+        "func" : lambda: maximizeList( "37i9dQZEVXcXssf47BUM1F", "DSCO" ),
         "desc" : [
-            "Use maxList on Discover Weekly. Playlist will be prefixed 'dsco'.",
+            "Use maxList on Discover Weekly. Playlist will be prefixed 'DSCO'.",
             "Params: none" ]
         
      },
