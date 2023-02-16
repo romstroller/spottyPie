@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import keyring
 import requests
 import traceback
@@ -319,11 +320,22 @@ def mainLoop( args ):
         else: print( f"\n[ {args[0]} ] is not known command." )
         args = getValidatedInput()
 
+def connect_authenticate_loop():
+    while True:
+        # try: user_id, sp_cid, sp_sec, ops, spot = start()
+        try: return start()
+        except Exception as e: 
+            print( f"Error during connect-authentic: {type(e).__name__}" )
+            print( f"Retrying in three seconds..." )
+            time.sleep(3)
+        else: break
+
+
 def startFromArgs( args ):
     args = getValidatedInput( args )
     mainLoop( args )
 
 if __name__ == "__main__":
-    user_id, sp_cid, sp_sec, ops, spot = start()
+    user_id, sp_cid, sp_sec, ops, spot = connect_authenticate_loop()
     output_help()
     startFromArgs( sys.argv[1:] ) # omits inital filename arg
