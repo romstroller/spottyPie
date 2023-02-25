@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import time
 import keyring
 import requests
 import traceback
@@ -61,12 +60,12 @@ def createNewPL( pl_name="New_PL", stamp=True, ):
     except Exception as e: return f"EXC createNewPL:\n{type(e).__name__}\n{e}"
 
 def albsFromPList( pl_id ):
-    track_list = spot.user_playlist_tracks( user=user_id, playlist_id=pl_id, )
-    return { i : {
+    track_list = get_all_pl_tracks( user_id, pl_id, )
+    return { item['track']['album']['id'] : {
         "alb_id" : item['track']['album']['id'], 
         "tracks" : item['track']['album']['total_tracks'],
-        "dct" : item, } 
-        for i, item in enumerate( track_list['items']) }
+        "dct" : item, }
+        for item in track_list }
 
 def getAllTrackIDs( listDict ):
     Alb = namedtuple( "Alb", [ "alb_id", "siz", "dct" ] )
@@ -93,7 +92,7 @@ def maximizeList( from_pl_id, new_pl_pref ):
     tracklist_dct = albsFromPList( from_pl_id )
     allTrackIDs = getAllTrackIDs( tracklist_dct )
     addTracksByID( allTrackIDs, created_pl['id'] )
-    print( f"Playlist with pref {new_pl_pref} created" )
+    print( f"Playlist with prefix [ {new_pl_pref} ] created" )
 
 def get_all_pl_tracks( user_id, pl_id):
     rq_dct = spot.user_playlist_tracks( user_id, pl_id )
@@ -143,8 +142,9 @@ def distance_shuffle_playlist(pl_id):
     out = [ 0 for i in range(len(track_dct)) ]
     for pos, group_id in shuffle.items(): out[pos-1] = group_dct[group_id].pop()
 
-    if ( set([item["track"]["id"] for item in track_dct ]) - set(out) 
-        ) or ( len(in_list) != len(out) ): print("somethin ain't right")
+    if ( set([item["track"]["id"] for item in track_dct ]) - set(out) ) 
+        or ( len(in_list) != len(out) ): 
+            print("somethin ain't right")
 
     created_pl = createNewPL( pl_name=f"{pl['name']}_shfl" )
     addTracksByID( out, created_pl['id'] )
@@ -176,18 +176,17 @@ def getTracks( id ):
 
 def get_library( asPandas = False, store = False ):
     ''' if not asDict, returns pandas dataframe
-        if not store, returns '''
+        if not store, returns. '''
     
     playlistData = getPlaylists( asDict=not asPandas )
     
-    if asPandas: 
-        playlistData["tracklist"] = playlistData["id"].apply( 
-            lambda id: get_all_pl_tracks( id ) )
+    if asPandas: playlistData["tracklist"] = playlistData["id"].apply( 
+        lambda pl_id: get_all_pl_tracks( pl_id ) )
     else:
-        for id, dct in playlistData.items(): 
-            dct["tracks"].update({ "list": getTracks( id )})
+        for pl_id, dct in playlistData.items(): dct["tracks"].update(
+            { "list": get_all_pl_tracks( user_id, pl_id) })
     
-    print( f"collected library { 'as pd' if asPandas else 'as dict' }, {store=}" )
+    print( f"collected library { 'PD' if asPandas else 'DICT' }, {store=}" )
     if store: ops.storePKL( playlistData, "playlistData", os.getcwd() )
     else: return playlistData
 
@@ -240,18 +239,18 @@ cmdLib = {
         
     "maxrrad" : { 
         
-        "func" : lambda: maximizeList( "37i9dQZEVXbuX4MySjIacD", "RRAD" ),
+        "func" : lambda: maximizeList( "37i9dQZEVXbuX4MySjIacD", "rrad" ),
         "desc" : [
-            "Use maxList on Release Radar. Playlist will be prefixed 'RRAD'.",
+            "Use maxList on Release Radar. Playlist will be prefixed 'rrad'.",
             "Params: none" ]
         
      },
         
     "maxdsco" : { 
         
-        "func" : lambda: maximizeList( "37i9dQZEVXcXssf47BUM1F", "DSCO" ),
+        "func" : lambda: maximizeList( "37i9dQZEVXcXssf47BUM1F", "dsco" ),
         "desc" : [
-            "Use maxList on Discover Weekly. Playlist will be prefixed 'DSCO'.",
+            "Use maxList on Discover Weekly. Playlist will be prefixed 'dsco'.",
             "Params: none" ]
         
      },
@@ -313,6 +312,10 @@ def getValidatedInput( args = None ):
     
     return args
 
+
+# separate "connect" and add "connect_loop"
+
+
 def mainLoop( args ):
     while len(args) > 0:
         if args[0] in cmdLib.keys(): cmdLib[ args[0].lower() ][ "func" ]( *args[1:] )
@@ -320,22 +323,11 @@ def mainLoop( args ):
         else: print( f"\n[ {args[0]} ] is not known command." )
         args = getValidatedInput()
 
-def connect_authenticate_loop():
-    while True:
-        # try: user_id, sp_cid, sp_sec, ops, spot = start()
-        try: return start()
-        except Exception as e: 
-            print( f"Error during connect-authentic: {type(e).__name__}" )
-            print( f"Retrying in three seconds..." )
-            time.sleep(3)
-        else: break
-
-
 def startFromArgs( args ):
     args = getValidatedInput( args )
     mainLoop( args )
 
 if __name__ == "__main__":
-    user_id, sp_cid, sp_sec, ops, spot = connect_authenticate_loop()
+    user_id, sp_cid, sp_sec, ops, spot = start()
     output_help()
     startFromArgs( sys.argv[1:] ) # omits inital filename arg
